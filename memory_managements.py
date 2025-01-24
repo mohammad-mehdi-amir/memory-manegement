@@ -4,9 +4,9 @@ class MemoryManagementSimulator:
         self.page_size = page_size
         self.allocation_algo = allocation_algo
         self.replacement_algo = replacement_algo
-        self.memory = []  # Tracks the current memory state
-        self.process_pages = {}  # Tracks the pages allocated to each process
-        self.page_faults = {}  # Tracks page faults per process
+        self.memory = []  
+        self.process_pages = {}  
+        self.page_faults = {}  
 
     def allocate_memory(self, processes):
         remaining_memory = self.total_memory_size
@@ -57,13 +57,13 @@ class MemoryManagementSimulator:
         if self.replacement_algo == "FIFO":
             replaced_page = self.memory.pop(0)
         elif self.replacement_algo == "LRU":
-            replaced_page = self.memory.pop(0)  # Simplified for demonstration
+            replaced_page = self.memory.pop(0)  
         elif self.replacement_algo == "Optimal":
-            replaced_page = self.memory.pop(-1)  # Simplified for demonstration
+            replaced_page = self.memory.pop(-1)  
         elif self.replacement_algo == "Clock":
-            replaced_page = self.memory.pop(0)  # Simplified for demonstration
+            replaced_page = self.memory.pop(0)  
         elif self.replacement_algo == "NRU":
-            replaced_page = self.memory.pop(0)  # Simplified for demonstration
+            replaced_page = self.memory.pop(0)  
         
         self.memory.append(new_page)
         return replaced_page
@@ -78,33 +78,32 @@ class MemoryManagementSimulator:
             print(f"  {process} = {faults}")
 
 
-if __name__ == "__main__":
-    # Sample Input
-    total_memory_size = 100
-    page_size = 10
-    allocation_algo = "First Fit"
-    replacement_algo = "LRU"
-    processes = {
-        "Process A": 40,
-        "Process B": 30,
-        "Process C": 50
-    }
-    page_access_sequence = [
-        ["Process A", 1],
-        ["Process B", 1],
-        ["Process A", 2],
-        ["Process C", 1],
-        ["Process A", 3],
-        ["Process C", 2],
-        ["Process B", 2],
-        ["Process C", 3],
-        ["Process A", 4],
-        ["Process C", 4],
-        ["Process B", 3],
-        ["Process C", 5]
-    ]
 
-    simulator = MemoryManagementSimulator(total_memory_size, page_size, allocation_algo, replacement_algo)
-    simulator.allocate_memory(processes)
-    simulator.simulate_page_access(page_access_sequence)
-    simulator.print_statistics()
+total_memory_size = 100
+page_size = 10
+allocation_algo = "First Fit"
+replacement_algo = "LRU"
+processes = {
+    "Process A": 40,
+    "Process B": 30,
+    "Process C": 50
+}
+page_access_sequence = [
+    ["Process A", 1],
+    ["Process B", 1],
+    ["Process A", 2],
+    ["Process C", 1],
+    ["Process A", 3],
+    ["Process C", 2],
+    ["Process B", 2],
+    ["Process C", 3],
+    ["Process A", 4],
+    ["Process C", 4],
+    ["Process B", 3],
+    ["Process C", 5]
+]
+
+simulator = MemoryManagementSimulator(total_memory_size, page_size, allocation_algo, replacement_algo)
+simulator.allocate_memory(processes)
+simulator.simulate_page_access(page_access_sequence)
+simulator.print_statistics()
