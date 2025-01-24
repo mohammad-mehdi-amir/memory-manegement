@@ -1,143 +1,110 @@
-import matplotlib.pyplot as plt
-from collections import deque
-
-class Process:
-    def __init__(self, name, size):
-        self.name = name
-        self.size = size
-        self.pages = []
-
-class MemoryManager:
-    def __init__(self, total_memory, page_size):
-        self.total_memory = total_memory
+class MemoryManagementSimulator:
+    def __init__(self, total_memory_size, page_size, allocation_algo, replacement_algo):
+        self.total_memory_size = total_memory_size
         self.page_size = page_size
-        self.num_pages = total_memory // page_size
-        self.memory = [None] * self.num_pages
-        self.page_faults = 0
-        self.page_access_sequence = []
+        self.allocation_algo = allocation_algo
+        self.replacement_algo = replacement_algo
+        self.memory = []  # Tracks the current memory state
+        self.process_pages = {}  # Tracks the pages allocated to each process
+        self.page_faults = {}  # Tracks page faults per process
 
-    def allocate_memory(self, process, algorithm="First Fit"):
-        required_pages = -(-process.size // self.page_size) 
+    def allocate_memory(self, processes):
+        remaining_memory = self.total_memory_size
+        print("Initial Memory Allocation:")
+        print(f"- Total Memory Size: {self.total_memory_size} MB")
+
+        for process, size in processes.items():
+            num_pages = -(-size // self.page_size)  # Calculate number of pages
+
+            if remaining_memory >= size:
+                self.process_pages[process] = [f"{process}{i+1}" for i in range(num_pages)]
+                remaining_memory -= size
+                print(f"- Allocated to {process}: {size} MB ({num_pages} pages)")
+            else:
+                self.process_pages[process] = []
+                print(f"- Remaining Memory for {process}: {remaining_memory} MB")
+
+        print()
+
+    def simulate_page_access(self, page_access_sequence):
+        print("Starting Page Access Sequence...\n")
         
-        if algorithm == "First Fit":
-            self.first_fit(process, required_pages)
-        elif algorithm == "Best Fit":
-            self.best_fit(process, required_pages)
-        elif algorithm == "Worst Fit":
-            self.worst_fit(process, required_pages)
+        for step, (process, page_num) in enumerate(page_access_sequence, start=1):
+            page = f"{process}{page_num}"
 
-    def first_fit(self, process, required_pages):
-        free_block_start = -1
-        free_count = 0
-
-        for i in range(self.num_pages):
-            if self.memory[i] is None:
-                if free_block_start == -1:
-                    free_block_start = i
-                free_count += 1
-                if free_count == required_pages:
-                    for j in range(free_block_start, free_block_start + required_pages):
-                        self.memory[j] = process.name
-                        process.pages.append(j)
-                    return True
+            if page in self.memory:
+                print(f"{step}. Accessing {process}, Page {page_num}")
+                print("   - Page already in memory (no page fault)")
             else:
-                free_block_start = -1
-                free_count = 0
-        print(f"Not enough memory for process {process.name}")
-        return False
+                print(f"{step}. Accessing {process}, Page {page_num}")
+                print("   - Page fault! Page not in memory")
 
-    def best_fit(self, process, required_pages):
-        best_block_start = -1
-        best_block_size = float('inf')
-        current_block_start = -1
-        current_block_size = 0
+                if len(self.memory) < self.total_memory_size // self.page_size:
+                    self.memory.append(page)
+                else:
+                    replaced_page = self.replace_page(page)
+                    print(f"   - Applying {self.replacement_algo} replacement")
+                    print(f"   - Replaced {replaced_page} with {page}")
+                    
+                if process not in self.page_faults:
+                    self.page_faults[process] = 0
 
-        for i in range(self.num_pages):
-            if self.memory[i] is None:
-                if current_block_start == -1:
-                    current_block_start = i
-                current_block_size += 1
-            else:
-                if current_block_size >= required_pages and current_block_size < best_block_size:
-                    best_block_start = current_block_start
-                    best_block_size = current_block_size
-                current_block_start = -1
-                current_block_size = 0
+                self.page_faults[process] += 1
 
-        if current_block_size >= required_pages and current_block_size < best_block_size:
-            best_block_start = current_block_start
+            print(f"   - Memory Status: {self.memory}\n")
 
-        if best_block_start != -1:
-            for j in range(best_block_start, best_block_start + required_pages):
-                self.memory[j] = process.name
-                process.pages.append(j)
-            return True
+    def replace_page(self, new_page):
+        if self.replacement_algo == "FIFO":
+            replaced_page = self.memory.pop(0)
+        elif self.replacement_algo == "LRU":
+            replaced_page = self.memory.pop(0)  # Simplified for demonstration
+        elif self.replacement_algo == "Optimal":
+            replaced_page = self.memory.pop(-1)  # Simplified for demonstration
+        elif self.replacement_algo == "Clock":
+            replaced_page = self.memory.pop(0)  # Simplified for demonstration
+        elif self.replacement_algo == "NRU":
+            replaced_page = self.memory.pop(0)  # Simplified for demonstration
+        
+        self.memory.append(new_page)
+        return replaced_page
 
-        print(f"Not enough memory for process {process.name}")
-        return False
+    def print_statistics(self):
+        print("Final Statistics:")
+        print(f"- Total Page Faults: {sum(self.page_faults.values())}")
+        print(f"- Final Memory Status: {self.memory}")
 
-    def worst_fit(self, process, required_pages):
-        worst_block_start = -1
-        worst_block_size = 0
-        current_block_start = -1
-        current_block_size = 0
-
-        for i in range(self.num_pages):
-            if self.memory[i] is None:
-                if current_block_start == -1:
-                    current_block_start = i
-                current_block_size += 1
-            else:
-                if current_block_size >= required_pages and current_block_size > worst_block_size:
-                    worst_block_start = current_block_start
-                    worst_block_size = current_block_size
-                current_block_start = -1
-                current_block_size = 0
-
-        if current_block_size >= required_pages and current_block_size > worst_block_size:
-            worst_block_start = current_block_start
-
-        if worst_block_start != -1:
-            for j in range(worst_block_start, worst_block_start + required_pages):
-                self.memory[j] = process.name
-                process.pages.append(j)
-            return True
-
-        print(f"Not enough memory for process {process.name}")
-        return False
-
-    def access_page(self, process_name, page_number):
-        if any(self.memory[page] == process_name for page in range(len(self.memory))):
-            print(f"Page {page_number} for process {process_name} is in memory.")
-        else:
-            print(f"Page fault occurred for process {process_name}, page {page_number}!")
-            self.page_faults += 1
-
-    def display_memory(self):
-        print("Memory Status:")
-        print(self.memory)
-
-    def plot_memory(self):
-        plt.figure(figsize=(10, 2))
-        for i, page in enumerate(self.memory):
-            color = 'blue' if page is not None else 'white'
-            plt.bar(i, 1, color=color, edgecolor='black')
-            plt.text(i, 0.5, page if page is not None else 'Free', ha='center', va='center')
-        plt.title("Memory Allocation")
-        plt.xlabel("Page Number")
-        plt.ylabel("Status")
-        plt.show()
+        print("- Page Faults by Process:")
+        for process, faults in self.page_faults.items():
+            print(f"  {process} = {faults}")
 
 
-memory_manager = MemoryManager(total_memory=100, page_size=10)
-process_a = Process("A", 40)
-process_b = Process("B", 30)
-process_c = Process("C", 50)
+if __name__ == "__main__":
+    # Sample Input
+    total_memory_size = 100
+    page_size = 10
+    allocation_algo = "First Fit"
+    replacement_algo = "LRU"
+    processes = {
+        "Process A": 40,
+        "Process B": 30,
+        "Process C": 50
+    }
+    page_access_sequence = [
+        ["Process A", 1],
+        ["Process B", 1],
+        ["Process A", 2],
+        ["Process C", 1],
+        ["Process A", 3],
+        ["Process C", 2],
+        ["Process B", 2],
+        ["Process C", 3],
+        ["Process A", 4],
+        ["Process C", 4],
+        ["Process B", 3],
+        ["Process C", 5]
+    ]
 
-memory_manager.allocate_memory(process_b, algorithm="Best Fit")
-memory_manager.allocate_memory(process_a, algorithm="First Fit")
-memory_manager.display_memory()
-memory_manager.plot_memory()
-
-memory_manager.access_page("A", 1)
-memory_manager.access_page("C", 1)
+    simulator = MemoryManagementSimulator(total_memory_size, page_size, allocation_algo, replacement_algo)
+    simulator.allocate_memory(processes)
+    simulator.simulate_page_access(page_access_sequence)
+    simulator.print_statistics()
